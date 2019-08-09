@@ -1,0 +1,105 @@
+CREATE DATABASE Music DEFAULT CHARACTER SET utf8;
+
+#USE Music; (Command line only)
+
+CREATE TABLE Artist (
+    artist_id INTEGER NOT NULL AUTO_INCREMENT,
+    name VARCHAR(225),
+    PRIMARY KEY(artist_id)
+)    ENGINE = INNODB;
+
+CREATE TABLE Album (
+     album_id INTEGER NOT NULL AUTO_INCREMENT,
+     title VARCHAR (225),
+     artist_id INTEGER,
+     PRIMARY KEY (album_id),
+     INDEX USING BTREE (title),
+     
+     CONSTRAINT FOREIGN KEY (artist_id)
+     	REFERENCES Artist (artist_id)
+     	ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE= INNODB;
+    
+ CREATE TABLE Genre (
+     genre_id INTEGER NOT NULL AUTO_INCREMENT,
+     name VARCHAR (225),
+     PRIMARY KEY (genre_id),
+     INDEX USING BTREE (name)
+    ) ENGINE = INNODB;
+    
+ CREATE TABLE Track (
+     track_id INTEGER NOT NULL AUTO_INCREMENT,
+     title VARCHAR (225),
+     len INTEGER,
+     rating INTEGER,
+     count INTEGER,
+     album_id INTEGER,
+     genre_id INTEGER,
+     PRIMARY KEY (track_id),
+     INDEX USING BTREE (title),
+     
+      CONSTRAINT FOREIGN KEY (album_id) REFERENCES Album (album_id)
+     	ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT FOREIGN KEY (genre_id) REFERENCES Genre (genre_id)
+     	ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE= INNODB;
+
+
+#inserting data outwards in
+
+INSERT INTO Artist (name) VALUES (‘Elton John');
+INSERT INTO Artist (name) VALUES (‘Michael Jackson’);
+INSERT INTO Artist (name) VALUES (‘Jay Z’);
+
+
+INSERT INTO Genre (name) VALUES (‘Pop);
+INSERT INTO Genre (name) VALUES (‘Modern’);
+INSERT INTO Genre (name) VALUES (‘Hip-Hop);
+
+INSERT INTO Album (title, artist_id) VALUES (‘Yellow Brick Road', 1);
+INSERT INTO Album (title, artist_id) VALUES ('Thriller', 2);
+INSERT INTO Album (title, artist_id) VALUES (‘The Blueprint', 3);
+INSERT INTO Album (title, artist_id) VALUES (‘The Blueprint II', 3);
+INSERT INTO Album (title, artist_id) VALUES (‘The Blueprint III', 3);
+
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('This Song Has No Title', 4, 143, 0, 1, 1);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Grey Seal', 4, 240, 0, 1, 1);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Dirty Little Girl', 3, 300, 0, 1, 1);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Roy Rogers', 5, 247, 0, 1, 1);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Thriller', 5, 358, 0, 2, 2);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Billy Jean', 5, 296, 0, 2, 2);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Beat It', 5, 258, 0, 2, 2);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Baby Be Mine', 5, 260, 0, 2, 2);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Girls, Girls, Girls', 5, 275, 0, 3, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Takeover', 5, 313, 0, 3, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Heart of the City (Aint no Love)', 5, 343, 0, 3, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('The Rulers Back', 5, 350, 0, 3, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('Excuse Me Miss)', 5, 281, 0, 4, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('The Bounce)', 3, 258, 0, 4, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('A Dream)', 4, 252, 0, 4, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('MIx1', 4, 255, 0, 5, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('MIx2', 4, 256, 0, 5, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('MIx3', 4, 257, 0, 5, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('MIx4', 4, 258, 0, 5, 3);
+INSERT INTO Track (title, rating, len, count, album_id, genre_id) VALUES ('MIx5', 4, 259, 0, 5, 3);
+
+
+
+# JOINING KEYS 
+
+SELECT Album.title, Artist.name FROM Album JOIN Artist ON Album.artist_id = Artist.artist_id;
+
+SELECT Album.title, Album.artist_id, Artist.artist_id, Artist.name FROM Album JOIN Artist ON Album.artist_id = Artist.artist_id;
+
+SELECT Track.title, Track.genre_id, Genre.genre_id, Genre.name FROM Track JOIN Genre
+
+
+# data joined up sorted in ascending order by the album title
+
+SELECT Track.title, Artist.name, Album.title, Genre.name FROM Track JOIN Genre JOIN Album JOIN Artist ON Track.genre_id = Genre.genre_id AND Track.album_id = Album.album_id AND Album.artist_id = Artist.artist_id
+
+
+# genres for a particular artist. Hint - use JOIN, DISTINCT and WHERE
+
+SELECT DISTINCT Artist.name, Genre.name FROM Track JOIN Genre JOIN Album JOIN Artist ON Track.genre_id = Genre.genre_id AND Track.album_id = Album.album_id AND Album.artist_id = Artist.artist_id WHERE Artist.name = 'JayZ'
+
