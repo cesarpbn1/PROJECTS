@@ -1,0 +1,51 @@
+[
+{"type":"header","version":"4.9.0.1","comment":"Export to JSON plugin for PHPMyAdmin"},
+{"type":"database","name":"Music"},
+{"type":"table","name":"Album","database":"Music","data":
+[
+{"album_id":"1","title":"Yellow Brick Road","artist_id":"1"},
+{"album_id":"2","title":"Thriller","artist_id":"2"},
+{"album_id":"3","title":"The Blueprint I","artist_id":"3"},
+{"album_id":"4","title":"The Blueprint II","artist_id":"3"},
+{"album_id":"5","title":"The Blueprint III","artist_id":"3"}
+]
+}
+,{"type":"table","name":"Artist","database":"Music","data":
+[
+{"artist_id":"1","name":"Elton"},
+{"artist_id":"2","name":"Michael Jackson"},
+{"artist_id":"3","name":"JayZ"}
+]
+}
+,{"type":"table","name":"Genre","database":"Music","data":
+[
+{"genre_id":"3","name":"Hip-Hop"},
+{"genre_id":"1","name":"Modern"},
+{"genre_id":"2","name":"Pop"}
+]
+}
+,{"type":"table","name":"Track","database":"Music","data":
+[
+{"track_id":"1","title":"This Song Has No Title","len":"143","rating":"4","count":"0","album_id":"1","genre_id":"1"},
+{"track_id":"2","title":"Grey Seal","len":"240","rating":"4","count":"0","album_id":"1","genre_id":"1"},
+{"track_id":"3","title":"Dirty Little Girl","len":"300","rating":"3","count":"0","album_id":"1","genre_id":"1"},
+{"track_id":"4","title":"Roy Rogers","len":"247","rating":"5","count":"0","album_id":"1","genre_id":"1"},
+{"track_id":"5","title":"Thriller","len":"358","rating":"5","count":"0","album_id":"2","genre_id":"2"},
+{"track_id":"6","title":"Billy Jean","len":"296","rating":"5","count":"0","album_id":"2","genre_id":"2"},
+{"track_id":"7","title":"Beat It","len":"258","rating":"5","count":"0","album_id":"2","genre_id":"2"},
+{"track_id":"8","title":"Baby Be Mine","len":"260","rating":"5","count":"0","album_id":"2","genre_id":"2"},
+{"track_id":"9","title":"Girls, Girls, Girls","len":"275","rating":"5","count":"0","album_id":"3","genre_id":"3"},
+{"track_id":"10","title":"Takeover","len":"313","rating":"5","count":"0","album_id":"3","genre_id":"3"},
+{"track_id":"11","title":"Heart of the City (Aint no Love)","len":"343","rating":"5","count":"0","album_id":"3","genre_id":"3"},
+{"track_id":"12","title":"The Rulers Back","len":"350","rating":"5","count":"0","album_id":"3","genre_id":"3"},
+{"track_id":"13","title":"Excuse Me Miss","len":"281","rating":"5","count":"0","album_id":"4","genre_id":"3"},
+{"track_id":"14","title":"The Bounce","len":"258","rating":"3","count":"0","album_id":"4","genre_id":"3"},
+{"track_id":"15","title":"A Dream","len":"252","rating":"4","count":"0","album_id":"4","genre_id":"3"},
+{"track_id":"16","title":"MIx1","len":"255","rating":"4","count":"0","album_id":"5","genre_id":"3"},
+{"track_id":"17","title":"MIx2","len":"256","rating":"4","count":"0","album_id":"5","genre_id":"3"},
+{"track_id":"18","title":"MIx3","len":"257","rating":"4","count":"0","album_id":"5","genre_id":"3"},
+{"track_id":"19","title":"MIx4","len":"258","rating":"4","count":"0","album_id":"5","genre_id":"3"},
+{"track_id":"20","title":"MIx5","len":"259","rating":"4","count":"0","album_id":"5","genre_id":"3"}
+]
+}
+]
