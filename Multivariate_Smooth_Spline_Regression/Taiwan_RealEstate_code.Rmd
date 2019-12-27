@@ -1,0 +1,468 @@
+---
+title: "SL Midterm Project: Marketing"
+author: "Peter Salamon"
+date: "4/21/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In today's day and age, social media is the largest driving force of marketing and advertisement. Companies are scrambling to take advantage of the user engagement that social media platforms atract in order to advertise their products and expand their consumer base. Companies now have their own social media pages to interact with their customers and serves as landing pages for new potential buyers. Thanks to big data and other emerging technologies, companies can now mine the data generated on their pages to improve their marketing campaigns and increse their sales. The challenge, then, is to use this data to obtain valuable busisness insight and determine how to maximize user engagements with the caompanies posts. The greater the engagement, the more publilcity the company gathers and the more likely it is that a consumer will purchace their product. This is were regression analysis shines.
+
+Regression analysis allows one to make predictions about a variable based on other variables. Till this day, linear regression models have reamined as the greatest toll in an analysts tool box for the purposes of modeling and prediction. Although, there are different types of regression models on may employ. The goal of this project is three-fold:
+
+1) Determine what attributes of a Facebook post maximize user engagement
+2) Create a regression model for the prediction of 'Total Interactions'
+3) Compare the performances of 3 different regression models for the prediction of user engagement on a social media post using data gathered from the Facebook page of a cosmetics comapnay. 
+
+Based on various metrics and characteristics of the post, we will predict the number of user angagements a post will recieve.
+
+The dataset was obtained from the University of California Irvine Machine Learning Repository. The dataset was originally collected by reserachers Sérgio Moro, Paulo Rita, and Bernardo Vala who published Predicting social media performance metrics and evaluation of the impact on brand building: A data mining approach in the Journal of Business Research.
+
+To navigate to a particular section of the analysis, please use the links provided below.
+
+* [Data Processing & Exploration](#DataProcessing&Exploration)
+
+* [Building the Models](#BuildingtheModels)
+  
+ * [Multiple Regression Model](#MultipleRegressionModel)
+  
+ * [Regression Splines Model](#RegressionSplinesModel)
+ 
+ * [Smoothing Splines Model](#SmoothingSplinesModel)
+ 
+* [Assessing the Models](#AssessingtheModels)
+ 
+* [Conclusion](#Conclusion)
+
+## Data Processing & Exploration {#DataProcessing&Exploration}
+
+```{r,message=FALSE}
+# Importing the necessary libraries and packages
+library("ggplot2")
+library("data.table")
+library("plotly")
+library("stats")
+library("scales")
+library("gridExtra")
+require(gridExtra)
+library(splines)
+theme_set(theme_gray())
+```
+
+```{r}
+# Importing the data
+wd <- "/Users/mareksalamon/Desktop/School/Hunter/Spring Semester 2019/Statistical Learning (72456)/Midterm Project"
+data <- read.csv(paste0(wd, "/Data/dataset_Facebook.csv"), sep = ';')
+```
+
+```{r}
+head(data)
+```
+
+```{r}
+tail(data)
+```
+
+```{r}
+str(data)
+```
+
+Our dataset is composed of 19 variables. 7 of which are known prior to post publication and 12 features that are evaluated after post publication. They are as follows:
+
+![pic](/Users/mareksalamon/Desktop/School/Hunter/Spring Semester 2019/Statistical Learning (72456)/Midterm Project/images/img_1.png)
+![pic](/Users/mareksalamon/Desktop/School/Hunter/Spring Semester 2019/Statistical Learning (72456)/Midterm Project/images/img_2.png)
+
+Some of these variables are better suited as factors rather than numeric values; let's change that.
+
+```{r}
+# Changing data type of certain variables to more apropriate types
+cols <- c("Category","Post.Month","Post.Weekday","Post.Hour","Paid")
+data[cols] <- lapply(data[cols], function(x) as.factor(x))
+```
+
+Now, let's see how much missing data remains in the dataset.
+
+```{r}
+(sum(is.na(data))/(nrow(data)*ncol(data)))*100
+```
+
+```{r}
+missing.col <- (colSums(is.na(data))[colSums(is.na(data)) > 0]/nrow(data))*100
+missing.col.names <- row.names(data.frame(missing.col))
+missing.col.percent <- data.frame(missing.col)
+missing.col.percent <- setorder(data.frame(missing.col), missing.col)
+colnames(missing.col.percent) <- 'percent.missing'
+missing.col.percent
+```
+
+It seems like we are only missing 4 values in the 'share' column, 1 value in the 'like' column, and 1 value in the 'Paid' column. In an effort to treat this analysis as much as a real-world situation as possible, the model will only be trained on 'Page total likes', 'Category', 'Post Month', 'Post Weekday', 'Post Hour', and 'Paid'. Since no features other than the 7 previously listed are known prior to the publication of a Facebook post, we would only be able to make predictions on the number of total interactions with these 7 variables. With this in mind, the 'share' and 'like' columns will not be included in the model. This leaves us with a single missing value in the 'Paid' column. To make sure that the dataset being used is as represnetative of the total population of Facebook posts made by the company as possible, the observation containing this missing value will be removed. This deletion will have little consequence on uor analysis seeing as we have a total of 500 observations and a single one only makes up 0.2% of the total dataset.
+
+When exploring the variables further, individually, missing values will be removed since no variable possess a number of missing values making up more than 1% of its total data store.
+
+```{r}
+# Cleaning the dataset for the model
+model.data <- data[c('Page.total.likes', 'Type', 'Category', 'Post.Month', 'Post.Weekday', 'Post.Hour', 'Paid','Total.Interactions')]
+model.data = model.data[complete.cases(model.data), ]
+```
+
+```{r}
+# Confirming there are no more missing values
+(sum(is.na(model_data))/(nrow(model_data)*ncol(model_data)))*100
+```
+
+Now, let's take a look at the distribution of each variable in out dataset.
+
+```{r}
+# Let's create custom, professional looking color palettes
+
+# colors
+corpo_colors <- c(
+  `red`        = "#d11141",
+  `green`      = "#00b159",
+  `blue`       = "#00aedb",
+  `orange`     = "#f37735",
+  `yellow`     = "#ffc425",
+  `light grey` = "#cccccc",
+  `dark grey`  = "#8c8c8c")
+
+# Function to extract corpo colors as hex codes
+# '...' - Character names of corpo_colors 
+
+corpo_cols <- function(...) {
+  cols <- c(...)
+
+  if (is.null(cols))
+    return (corpo_colors)
+
+  corpo_colors[cols]
+}
+
+# We may now create custome color palettes using the colors we have selected
+
+corpo_palettes <- list(
+  `main`  = corpo_cols("red", "green", "blue", "orange", "yellow", "light grey", "dark grey"),
+
+  `cool`  = corpo_cols("blue", "green"),
+
+  `hot`   = corpo_cols("yellow", "orange", "red"),
+
+  `mixed` = corpo_cols("blue", "green", "yellow", "orange", "red"),
+
+  `grey`  = corpo_cols("light grey", "dark grey")
+)
+
+# Return function to interpolate a corpo color palette; allows for shades/new color palettes
+# "palette" - Character name of palette in drsimonj_palettes
+# "reverse" - Boolean indicating whether the palette should be reversed
+# "..." - Additional arguments to pass to colorRampPalette()
+
+corpo_pal <- function(palette = "main", reverse = FALSE, ...) {
+  pal <- corpo_palettes[[palette]]
+
+  if (reverse) pal <- rev(pal)
+
+  colorRampPalette(pal, ...)
+}
+
+#' Color scale constructor for corpo colors
+
+# "palette" - Character name of palette in corpo_palettes
+# "discrete" - Boolean indicating whether color aesthetic is discrete or not
+# "reverse" - Boolean indicating whether the palette should be reversed
+# "..." - Additional arguments passed to discrete_scale() or
+# scale_color_gradientn(), used respectively when discrete is TRUE or FALSE
+
+scale_color_corpo <- function(palette = "main", discrete = TRUE, reverse = FALSE, ...) {
+  pal <- corpo_pal(palette = palette, reverse = reverse)
+  if (discrete) {
+    discrete_scale("colour", paste0("corpo_", palette), palette = pal, ...)
+  } else {
+    scale_color_gradientn(colours = pal(256), ...)
+  }
+}
+
+# Fill scale constructor for corpo colors
+
+# "palette" - Character name of palette in drsimonj_palettes
+# "discrete" - Boolean indicating whether color aesthetic is discrete or not
+# "reverse" - Boolean indicating whether the palette should be reversed
+# "..." - Additional arguments passed to discrete_scale() or
+# scale_fill_gradientn(), used respectively when discrete is TRUE or FALSE
+
+scale_fill_corpo <- function(palette = "main", discrete = TRUE, reverse = FALSE, ...) {
+  pal <- corpo_pal(palette = palette, reverse = reverse)
+
+  if (discrete) {
+    discrete_scale("fill", paste0("corpo_", palette), palette = pal, ...)
+  } else {
+    scale_fill_gradientn(colours = pal(256), ...)
+  }
+}
+
+# Function that creates histograms.
+
+histogram.plot <- function(df=data, feat, title, x_label, bw = 1, breaks = NULL, limits = NULL){
+
+  z <- ggplot(df, aes(x=df[[feat]], fill = ..count..))
+  h.plot <- z + geom_histogram(aes(y = (..count..)/sum(..count..)), binwidth = bw, color = 'white', show.legend = FALSE) + 
+  labs(title = title) + xlab(x_label) + ylab("Percent of Posts") +                                            scale_x_continuous(breaks = breaks, limits = limits) + 
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_gradient(low = corpo_cols("dark grey"), high = corpo_cols("blue")) +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title.x = element_text(margin = ggplot2::margin(t = 15, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(margin = ggplot2::margin(t = 0, r = 15, b = 0, l = 0)))
+  h.plot
+  
+}
+
+# Function that creates vertical barplots.
+
+vertical.barplot <- function(df=data, feat, title, x_label){
+
+  z = ggplot(df, aes(x = df[[feat]])) 
+  h.plot = z + geom_bar(aes(y = (..count..)/sum(..count..), fill = factor(..x..)), stat =                      "count") + 
+               labs(title = title) + xlab(x_label) + ylab("Percent of Posts") +
+               geom_text(aes(label = ..count.., y= (..count..)/sum(..count..)), stat= "count",                           vjust = -0.5, size=3) +                                                                 scale_y_continuous(labels=percent) + guides(fill=FALSE) + 
+               scale_fill_corpo(palette = "mixed", guide = "none") +
+               theme(plot.title = element_text(hjust = 0.5),
+                     axis.title.x = element_text(margin = ggplot2::margin(t = 15, r = 0, b = 0, 
+                                                                          l = 0)),
+                     axis.title.y = element_text(margin = ggplot2::margin(t = 0, r = 15, b = 0, 
+                                                                          l = 0)))
+  return(h.plot)
+
+}
+
+# Function that create horizontal barplots.
+
+horizontal.barplot <- function(df=data, feat, title, y_label){
+
+  z = ggplot(df, aes(x = df[[feat]])) 
+  h.plot = z + geom_bar(aes(y = (..count..)/sum(..count..), fill = factor(..x..)), stat =                      "count") + 
+               labs(title = title) + xlab(y_label) + ylab("Percent of Posts") +
+               geom_text(aes(label = ..count.., y= (..count..)/sum(..count..)), stat= "count",                          hjust = -0.5, size=3) +
+              scale_y_continuous(labels=percent, oob = rescale_none, limits = c(0, 0.25)) + 
+              coord_flip() + 
+              guides(fill=FALSE) + 
+              scale_fill_corpo(palette = "mixed") +
+              theme(plot.title = element_text(hjust = 0.5),
+                    axis.title.x = element_text(margin = ggplot2::margin(t = 15, r = 0, b = 0, 
+                                                                         l = 0)),
+                    axis.title.y = element_text(margin = ggplot2::margin(t = 0, r = 15, b = 0, 
+                                                                         l = 0)))
+  return(h.plot)
+
+}
+```
+
+```{r}
+# Histogram of 'Page.total.likes'
+ptl.plot <- histogram.plot(data, "Page.total.likes", title = "Distribution of Page Total Likes", x_label = "Page Total Likes", bw = 5000, breaks = seq(80000,140000,5000)) 
+ptl.plot
+```
+
+```{r}
+# Barplot of 'Type'
+type.plot <- vertical.barplot(data, "Type", "Distribution of Type", "Type")
+type.plot
+```
+
+```{r}
+# Barplot of 'Category'
+cat.plot <- vertical.barplot(data, "Category", "Distribution of Category", "Category")
+cat.plot
+```
+
+
+```{r}
+# Barplot of 'Post.Month'
+pmonth.plot <- horizontal.barplot(data, "Post.Month", "Distribution of Post Month", "Post Month")
+pmonth.plot
+```
+
+```{r}
+# Barplot of 'Post.Weekday'
+pweekday.plot <- vertical.barplot(data, "Post.Weekday", "Distribution of Post Weekday", "Post Weekday")
+pweekday.plot
+```
+
+```{r}
+# Barplot of 'Post.Hour'
+phour.plot <- horizontal.barplot(data, "Post.Hour", "Distribution of Post Hour", "Post Hour")
+phour.plot
+```
+
+```{r}
+# Barplot of 'Paid'
+paid.plot <- vertical.barplot(data, "Paid", "Distribution of Paid", "Paid")
+paid.plot
+```
+
+```{r}
+# Histogram of 'Lifetime.Post.Total.Reach'
+lptr.plot <- histogram.plot(data, "Lifetime.Post.Total.Reach", title = "Distribution of Lifetime Post Total Reach", x_label = "Lifetime Post Total Reach", bw = 5000, breaks = seq(0,175000,25000)) 
+lptr.plot
+```
+
+```{r}
+# Histogram of 'Lifetime.Post.Total.Impressions'
+lpti.plot <- histogram.plot(data, "Lifetime.Post.Total.Impressions", title = "Distribution of Lifetime Post Total Impressions", x_label = "Lifetime Post Total Impressions", bw = 25000, breaks = seq(0,1200000,200000)) 
+lpti.plot
+```
+
+```{r}
+# Histogram of 'Lifetime.Engaged.Users'
+leu.plot <- histogram.plot(data, "Lifetime.Engaged.Users", title = "Distribution of Lifetime Engaged Users", x_label = "Lifetime Engaged Users", bw = 500, breaks = seq(0,12000,2000)) 
+leu.plot
+```
+
+```{r}
+# Histogram of 'Lifetime.Post.Consumers'
+lpcr.plot <- histogram.plot(data, "Lifetime.Post.Consumers", title = "Distribution of Lifetime Post Consumers", x_label = "Lifetime Post Consumers", bw = 500, breaks = seq(0,12000,2000)) 
+lpcr.plot
+```
+
+```{r}
+# Histogram of 'Lifetime.Post.Consumptions'
+lpct.plot <- histogram.plot(data, "Lifetime.Post.Consumptions", title = "Distribution of Lifetime Post Consumptions", x_label = "Lifetime Post Consumptions", bw = 500, breaks = seq(0,20000,2500)) 
+lpct.plot
+```
+
+```{r}
+# Histogram of 'Lifetime.Post.Impressions.by.people.who.have.liked.your.Page'
+lpil.plot <- histogram.plot(data, "Lifetime.Post.Impressions.by.people.who.have.liked.your.Page", title = "Distribution of Lifetime Post Impressions (by people that liked page)", x_label = "Lifetime Post Impressions", bw = 50000, breaks = seq(0,1200000,200000)) 
+lpil.plot
+```
+
+```{r}
+# Histogram of 'Lifetime.Post.reach.by.people.who.like.your.Page'
+lprl.plot <- histogram.plot(data, "Lifetime.Post.reach.by.people.who.like.your.Page", title = "Distribution of Lifetime Post Reach (by people that liked page)", x_label = "Lifetime Post Reach", bw = 1000, breaks = seq(0,50000,5000)) 
+lprl.plot
+```
+
+```{r}
+# Histogram of 'Lifetime.People.who.have.liked.your.Page.and.engaged.with.your.post'
+lple.plot <- histogram.plot(data, "Lifetime.People.who.have.liked.your.Page.and.engaged.with.your.post", title = "Distribution of Lifetime People (who liked page and engaged with post)", x_label = "Lifetime People", bw = 200, breaks = seq(0,4000,1000)) 
+lple.plot
+```
+
+```{r}
+# Histogram of 'comment'
+comments.plot <- histogram.plot(data, "comment", title = "Distribution of Comments", x_label = "Comments", bw = 10, breaks = seq(0,350,50)) 
+comments.plot
+```
+
+```{r}
+# Histogram of 'like'
+likes.plot <- histogram.plot(data, "like", title = "Distribution of Likes", x_label = "Likes", bw = 250, breaks = seq(0,5000,1000)) 
+likes.plot
+```
+
+```{r}
+# Histogram of 'share'
+shares.plot <- histogram.plot(data, "share", title = "Distribution of Shares", x_label = "Shares", bw = 25, breaks = seq(0,800,100)) 
+shares.plot
+```
+
+```{r}
+# Histogram of 'Total.Interactions'
+ti.plot <- histogram.plot(model_data, "Total.Interactions", title = "Distribution of Total Interactions", x_label = "Total Interactions", bw = 100, breaks = seq(0,6000,1000)) 
+ti.plot
+```
+
+It looks like 'Total Interactions', our response vairiable, is positively skewed. This may impede our models to ability to model the data using linear kernel. It would be wise to perfrom a log transfrom on the variable in order to make it more remeniscient of a normal distribution. But, we have 0 values for some of the observations making the log transfom inpractical. So, we will take the square root of each value instead. This should perform the transformation is much the same way the log would but with the square root, we can easily deal with the 0 values.
+
+```{r}
+# Histogram of sqrt('Total.Interactions')
+sqrtti <- ggplot(data, aes(x=sqrt(data[['Total.Interactions']]), fill = ..count..))
+sqrtti.plot <- sqrtti + geom_histogram(aes(y = (..count..)/sum(..count..)), binwidth = 2, color = 'white', show.legend = FALSE) + 
+labs(title = "Distribution of sqrt(Total Interactions)") + xlab("sqrt(Total Interactions)") + ylab("Percent of Posts") + scale_x_continuous(breaks = seq(0,80,10), limits = NULL) + 
+scale_y_continuous(labels = scales::percent) +
+scale_fill_gradient(low = corpo_cols("dark grey"), high = corpo_cols("blue")) +
+theme(plot.title = element_text(hjust = 0.5),
+      axis.title.x = element_text(margin = ggplot2::margin(t = 15, r = 0, b = 0, l = 0)),
+      axis.title.y = element_text(margin = ggplot2::margin(t = 0, r = 15, b = 0, l = 0)))
+sqrtti.plot
+```
+
+That looks a little better, we'll make sure to train the models on the square root transformed 'Total Transactions' but then untransform the predictions once they are made. We'll continue by splitting out data into a train and test set. 
+
+```{r}
+# Creating a train and test split
+set.seed(20192)
+split <- sample.split(model.data$Total.Interactions, SplitRatio = 0.8)
+train <- subset(model.data, split == TRUE)
+train.x <- train[ ,!(names(train) %in% c("Total.Interactions"))]
+train.y <- sqrt(train$Total.Interactions)
+
+test <- subset(model.data, split == FALSE)
+test.x <- test[ ,!(names(test) %in% c("Total.Interactions"))]
+test.y <- test$Total.Interactions
+```
+
+## Building the Models {#BuildingtheModels}
+
+```{r}
+# Let's predict the average for each test observation and use it as a benchmark
+total.int.mean <- mean(train$Total.Interactions)
+avg.vector <- rep(c(total.int.mean), times = 100)
+
+cat("\nMean Square Error: ", mean((avg.vector-test.y)**2))
+cat("\nRoot Mean Square Error: ", sqrt(mean((avg.vector-test.y)**2)))
+```
+  
+### Multiple Regression Model {#MultipleRegressionModel}
+
+```{r}
+# Linear model
+train$Total.Interactions <- sqrt(train$Total.Interactions)
+lm <- lm(Total.Interactions~., data = train)
+lm.predictions <- (predict(lm, test.x))**2
+
+summary(lm)$adj.r.squared
+
+cat("\nMean Square Error: ", mean((lm.predictions-test.y)**2))
+cat("\nRoot Mean Square Error: ", sqrt(mean((lm.predictions-test.y)**2)))
+```
+
+### Regression Splines Model {#RegressionSplinesModel}
+ 
+```{r}
+rs <- lm(wage~bs(age, knots=c(25,40,60)), data = Wage)
+rs.predictions <- predict(rs, newdata = list(age = age.grid), se = T)
+```
+ 
+### Smoothing Splines Model {#SmoothingSplinesModel}
+ 
+```{r}
+ss <- smooth.spline(age, wage, df = 16)
+ss.predictions <- predict(ss, newdata = list(age=age.grid), se = T)
+``` 
+ 
+## Assessing the Models {#AssessingtheModels}
+ 
+```{r}
+
+``` 
+ 
+## Conclusion {#Conclusion}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
